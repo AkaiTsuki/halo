@@ -1,5 +1,7 @@
 package io.akaitsuki.halo.app.extension.customer;
 
-public interface CustomerNameExt {
+import io.akaitsuki.halo.core.IExtensionPoint;
+
+public interface CustomerNameExt extends IExtensionPoint {
     String customerName(String firstName, String lastName);
 }

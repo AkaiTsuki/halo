@@ -8,21 +8,21 @@ import java.util.Map;
 @Component
 public class ExtensionRepository {
 
-    private Map<BizCoordinator, Object> serviceMap = new HashMap<>();
+    private Map<BizCoordinator, IExtensionPoint> serviceMap = new HashMap<>();
 
-    public Object put(BizCoordinator bizCoordinator, Object service) {
+    public Object put(BizCoordinator bizCoordinator, IExtensionPoint service) {
         return serviceMap.put(bizCoordinator, service);
     }
 
-    public Object get(BizCoordinator bizCoordinator) {
+    public IExtensionPoint get(BizCoordinator bizCoordinator) {
         return serviceMap.get(bizCoordinator);
     }
 
-    public Map<BizCoordinator, Object> getServiceMap() {
+    public Map<BizCoordinator, IExtensionPoint> getServiceMap() {
         return serviceMap;
     }
 
-    public void setServiceMap(Map<BizCoordinator, Object> serviceMap) {
+    public void setServiceMap(Map<BizCoordinator, IExtensionPoint> serviceMap) {
         this.serviceMap = serviceMap;
     }
 }

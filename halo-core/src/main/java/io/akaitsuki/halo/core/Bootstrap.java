@@ -8,7 +8,9 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.util.CollectionUtils;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 
 public class Bootstrap implements ApplicationListener<ContextRefreshedEvent>, ApplicationContextAware {
@@ -16,7 +18,7 @@ public class Bootstrap implements ApplicationListener<ContextRefreshedEvent>, Ap
     private ApplicationContext applicationContext;
 
     @Autowired
-    private ExtensionRepository extensionRepository;
+    private RegisterFactory registerFactory;
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
@@ -25,38 +27,29 @@ public class Bootstrap implements ApplicationListener<ContextRefreshedEvent>, Ap
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
-        Map<String, Object> map = applicationContext.getBeansWithAnnotation(ExtensionPoint.class);
-        if (!CollectionUtils.isEmpty(map)) {
-            for (Map.Entry<String, Object> entry : map.entrySet()) {
-                Object instance = entry.getValue();
-                ExtensionPoint ep = instance.getClass().getAnnotation(ExtensionPoint.class);
-                BizCoordinator bizCoordinator = new BizCoordinator();
-                bizCoordinator.setBizId(ep.bizId());
-                bizCoordinator.setUseCase(ep.useCase());
-                bizCoordinator.setScenario(ep.scenario());
-                bizCoordinator.setClazz(calculateExtensionPoint(instance.getClass()));
-
-                if (extensionRepository.get(bizCoordinator) != null) {
-                    throw new RuntimeException("Find duplicate class with same value");
-                }
-
-                extensionRepository.put(bizCoordinator, instance);
+        Set<Class<?>> classSet = loadBeans();
+        for (Class<?> targetClz : classSet) {
+            Register register = registerFactory.getRegister(targetClz);
+            if (register != null) {
+                register.register(targetClz);
             }
         }
     }
 
-    private String calculateExtensionPoint(Class<?> targetClz) {
-        Class[] interfaces = targetClz.getInterfaces();
-        if (interfaces == null || interfaces.length == 0) {
-            throw new RuntimeException("Please assign a extension point interface for " + targetClz);
+    private Set<Class<?>> loadBeans() {
+        Set<Class<?>> classSet = new HashSet<>();
+        Map<String, Object> map = applicationContext.getBeansWithAnnotation(ExtensionPoint.class);
+        if (CollectionUtils.isEmpty(map)) {
+            return classSet;
         }
 
-        for (Class intf : interfaces) {
-            String extensionPoint = intf.getSimpleName();
-            if (extensionPoint.endsWith("Ext"))
-                return intf.getName();
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            Object bean = entry.getValue();
+            classSet.add(bean.getClass());
         }
 
-        throw new RuntimeException("Your name of ExtensionPoint for "+targetClz+" is not valid, must be end of "+"Ext");
+        return classSet;
     }
+
+
 }
